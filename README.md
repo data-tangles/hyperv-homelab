@@ -1,6 +1,6 @@
 [![ansible](https://img.shields.io/badge/Ansible-red?style=for-the-badge&logo=ansible)](https://www.ansible.com/)
 
-[![HitCount](https://hits.dwyl.com/qman-being/ansible.svg?style=for-the-badge&show=unique)](http://hits.dwyl.com/qman-being/ansible)
+[![HitCount](https://hits.dwyl.com/data-tangles/ansible.svg?style=for-the-badge&show=unique)](http://hits.dwyl.com/data-tangles/hyperv-homelab)
 
 # Hyper-V Homelab
 
