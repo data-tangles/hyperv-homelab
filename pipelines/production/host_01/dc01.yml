@@ -1,0 +1,56 @@
+variables:
+  - group: hyper_v_host_vars
+  - group: hyper_v_dc01
+
+parameters:
+  - name: nodeSelection
+    displayName: Hyper-V Node Selection
+    type: string
+    default: $(host_01)
+    values:
+      - $(host_01)
+      - $(host_02)
+
+trigger:
+- none
+
+stages:
+
+- stage: 'dc01creation'
+  dependsOn: []
+  displayName: 'dc01 VM Creation'
+
+  jobs:
+    - job: 'dc01creation'
+      displayName: 'dc01 VM Creation'
+      pool: Self-Hosted
+
+      steps:
+      - task: Ansible@0
+        displayName: Hyper V dc01 VM Creation
+        inputs:
+          ansibleInterface: 'agentMachine'
+          playbookPathOnAgentMachine: '$(System.DefaultWorkingDirectory)/hyper_v_windows_playbook.yml'
+          inventoriesAgentMachine: 'file'
+          inventoryFileOnAgentMachine: '/ansible/inventory/prod/hyper_v.ini'
+          args: '--extra-vars "HOSTS=${{ parameters.nodeSelection }} template_vhdx_destination=$(template_vhdx_destination) template_vhdx_source=$(template_vhdx_source) prod_vm_switch=$(prod_vm_switch) vm_name=$(vm_name) vm_cpu_count=$(vm_cpu_count)"'
+          failOnStdErr: false
+
+- stage: 'windowstemplateconfiguration'
+  dependsOn: 'windowsvmcreation'
+  displayName: 'Windows Template Configuration'
+
+  jobs:
+    - job: 'windowstemplateconfiguration'
+      displayName: 'Windows VM Template Configuration'
+      pool: Self-Hosted
+
+      steps:
+      - task: Ansible@0
+        displayName: Windows Template Configuration
+        inputs:
+          ansibleInterface: 'agentMachine'
+          playbookPathOnAgentMachine: '$(System.DefaultWorkingDirectory)/windows_template.yml'
+          inventoriesAgentMachine: 'file'
+          inventoryFileOnAgentMachine: '/ansible/inventory/prod/windows_template.ini'
+          failOnStdErr: false

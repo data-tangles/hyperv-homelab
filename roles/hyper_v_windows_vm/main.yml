@@ -1,13 +1,13 @@
 - name: Check if VHDX is already exists
   win_stat:
-    path: "{{ TEMPLATE_VHDX_DESTINATION }}"
+    path: "{{ template_vhdx_destination }}"
     get_checksum: false
   register: vhdx_exists
 
 - name: Clone Template VHDX
   win_copy:
-    src: "{{ TEMPLATE_VHDX_SOURCE }}"
-    dest: "{{ TEMPLATE_VHDX_DESTINATION }}"
+    src: "{{ template_vhdx_source }}"
+    dest: "{{ template_vhdx_destination }}"
     force: false
     remote_src: true
   when: vhdx_exists.stat.exists == false
@@ -15,21 +15,25 @@
 - name: Check if VM already exists
   ansible.windows.win_shell: |
     try {
-      Get-VM -Name "{{ VM_NAME }}" -ErrorAction Stop
+      Get-VM -Name "{{ vm_name }}" -ErrorAction Stop
     }
     catch {
-      Write-Output "{{ VM_NAME }} does not exist"
+      Write-Output "{{ vm_name }} does not exist"
     }
   register: vm_exists
 
 - name: Create new Hyper V VM
   ansible.windows.win_shell: |
-    New-VM -Name "{{ VM_NAME }}" -MemoryStartupBytes {{ VM_MEMORY }}GB -VHDPath "{{ TEMPLATE_VHDX_DESTINATION }}" -Generation 2 -SwitchName "{{ VM_SWITCH }}" -BootDevice VHD
+    New-VM -Name "{{ vm_name }}" -MemoryStartupBytes {{ vm_memory }}GB -VHDPath "{{ template_vhdx_destination }}" -Generation 2 -SwitchName "{{ prod_vm_switch }}" -BootDevice VHD
   when: "'does not exist' in vm_exists.stdout"
+
+- name: Set VM CPU count
+  ansible.windows.win_shell: |
+    Set-VM -Name "{{ vm_name }}" -ProcessorCount "{{ vm_cpu_count }}"
 
 - name: Start new Hyper V VM
   ansible.windows.win_shell: |
-    Start-VM -Name "{{ VM_NAME }}"
+    Start-VM -Name "{{ vm_name }}"
 
 - name: Wait for VM to fully boot
   ansible.builtin.wait_for:
@@ -38,7 +42,7 @@
 
 - name: Gather IP address details
   ansible.windows.win_shell:
-    Get-VM -Name "{{ VM_NAME }}" | Select-Object -ExpandProperty Networkadapters | Select-Object -Property @{n='IPAddresses';e={$_.IPAddresses | Where-Object { [IPAddress]::TryParse($_, [ref]$null) -and $_ -match '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$' -and $_ -notlike '*:*' } | Select-Object -First 1}}
+    Get-VM -Name "{{ vm_name }}" | Select-Object -ExpandProperty Networkadapters | Select-Object -Property @{n='IPAddresses';e={$_.IPAddresses | Where-Object { [IPAddress]::TryParse($_, [ref]$null) -and $_ -match '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$' -and $_ -notlike '*:*' } | Select-Object -First 1}}
   register: ip_address_result
 
 - name: Set IP address as fact
