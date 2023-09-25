@@ -1,0 +1,6 @@
+- hosts: "{{ nodes }}"
+  roles:
+    - hyper_v_linux_vm
+
+  vars_files:
+    - /ansible/vars/windows/hyper_v/hyper_v_host_vars.yml
